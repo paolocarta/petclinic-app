@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petclinic
+  labels:
+    app: petclinic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic
+  template:
+    metadata:
+      labels:
+        app: petclinic
+    spec:
+      containers:
+      - name: petclinic-test
+        image: image-registry.openshift-image-registry.svc:5000/pipelines-tutorial/petclinic:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+            protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: "1000Mi"
+          requests:
+            cpu: "0.5"
+            memory: "400Mi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          timeoutSeconds: 2
+          periodSeconds: 3
+          failureThreshold: 1
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          timeoutSeconds: 2
+          periodSeconds: 8
+          failureThreshold: 1   
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: petclinic-service
+spec:
+  # type: LoadBalancer
+  selector:
+    app: petclinic
+  ports:
+  - protocol: TCP
+    port: 9090
+    targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: petclinic
+  name: petclinic-route
+spec:
+  port:
+    targetPort: 9090-tcp
+  to:
+    kind: Service
+    name: petclinic-service
+    weight: 100
+
