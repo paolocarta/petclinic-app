@@ -6,7 +6,7 @@ spec:
   type: git
   params:
     - name: url
-      value: https://github.com/paolocarta/petclinic-kaniko.git
+      value: https://github.com/paolocarta/petclinic-app.git
     # - name: revision
     #   value: master
 ---
@@ -18,14 +18,4 @@ spec:
   type: image
   params:
     - name: url
-      value: gcr.io/ci-cd-playground/petclinic-kaniko:latest
----
-apiVersion: tekton.dev/v1alpha1
-kind: PipelineResource
-metadata:
-  name: petclinic-deploy
-spec:
-  type: git
-  params:
-    - name: url
-      value: https://github.com/paolocarta/petclinic-kaniko-deploy.git
+      value: image-registry.openshift-image-registry.svc:5000/pipelines-tutorial/petclinic:latest
