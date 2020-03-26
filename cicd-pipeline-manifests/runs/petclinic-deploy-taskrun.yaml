@@ -4,14 +4,13 @@ metadata:
   name: petclinic-deploy-taskrun
 spec:
   taskRef:
-    name: deploy-kubectl
-  serviceAccount: tekton-deploy
+    name: deploy-oc
   inputs:
     resources:
       - name: workspacedeploy
         resourceRef:
-          name: petclinic-deploy
+          name: petclinic-git
     params:
       - name: deployFile
-        value: test-deploy-secret.yaml
+        value: test-deploy.yaml
       

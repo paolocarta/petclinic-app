@@ -1,0 +1,14 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  name: petclinic-pipelinerun
+spec:
+  pipelineRef:
+    name: petclinic-pipeline
+  resources:
+  - name: source-repo
+    resourceRef:
+      name: petclinic-git
+  - name: docker-container
+    resourceRef:
+      name: petclinic-image
