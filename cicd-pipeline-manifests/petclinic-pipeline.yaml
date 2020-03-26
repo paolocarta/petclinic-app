@@ -17,66 +17,17 @@ spec:
         type: git
   steps:
     - name: maven-build
-      image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+      image: maven:3.6.3-jdk-8-slim
       workingDir: ${inputs.params.directory}
       command: ["mvn"]
       args:
         - "clean"
         - "install"
-        # - "-DskipTests"
-    - name: ls-target
-      image: ubuntu
-      command:
-        - "ls"
-      args:
-        - "-la"
-        - "/workspace/workspace/target"
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
-  name: build-kaniko
-spec:
-  inputs:
-    resources:
-      - name: workspace
-        type: git
-        targetPath: petclinic
-    params:
-      - name: directory
-        description: Working directory parameter
-        default: /workspace/petclinic
-      - name: DockerFilePath
-        description: Path to DockerFile
-        default: /workspace/petclinic/Dockerfile
-  outputs:
-    resources:
-      - name: dockerImage
-        type: image
-  steps:
-    - name: kaniko-build
-      image: gcr.io/kaniko-project/executor:latest
-      command:
-        - /kaniko/executor
-      args:
-        - "--dockerfile=${inputs.params.DockerFilePath}"
-        - "--context=${inputs.params.directory}"
-        - "--destination=${outputs.resources.dockerImage.url}"
-      env:
-        - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: /secret/kaniko-secret.json
-      volumeMounts:
-        - name: kaniko-secret
-          mountPath: /secret
-  volumes:
-    - name: kaniko-secret
-      secret:
-        secretName: kaniko-secret-cfg
----
-apiVersion: tekton.dev/v1alpha1
-kind: Task
-metadata:
-  name: deploy-kubectl
+  name: deploy-oc
 spec:
   inputs:
     resources:
@@ -85,33 +36,20 @@ spec:
     params:
       - name: directory
         description: Working directory parameter
-        default: /workspace/workspacedeploy
+        default: /workspace/workspacedeploy/deploy-manifest
       - name: deployFile
         description: Deployment file for app
         default: test-deploy.yaml
-        # Just a parameter to check the depployment name, because one step will force redeploy
-      - name: deploymentName
-        description: The K8s deployment object name
-        default: petclinic
   steps:
-    - name: kubectl-clean
-      image: gcr.io/cloud-builders/kubectl:latest
+    - name: oc-deploy
+      image: quay.io/openshift/origin-cli:latest
       workingDir: ${inputs.params.directory}
-      command: ["/bin/bash"]
+      command: ["/bin/bash", "-c"]
       args:
-        - -c
-        - MYDEPLOY=$(kubectl get deployments -l app=petclinic -o name | awk -F'/' '{print $2}');
-        - if [ "$MYDEPLOY" = "${inputs.params.deploymentName}" ];
-        - then kubectl delete deployment $MYDEPLOY;
-        - fi
-    - name: kubectl-deploy
-      image: gcr.io/cloud-builders/kubectl:latest
-      workingDir: ${inputs.params.directory}
-      command: ["kubectl"]
-      args:
-        - apply
-        - -f 
-        - ${inputs.params.deployFile}
+        - |-
+          echo Applying manifests in $(inputs.params.deployFile) directory
+          oc apply -f $(inputs.params.deployFile)
+          echo -----------------------------------
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: Pipeline
@@ -123,19 +61,17 @@ spec:
       type: git
     - name: docker-container
       type: image
-    - name: deploy-repo
-      type: git
   # params:
-  #   - name: pathToContext
-  #     description: Path of context build
-  #     default: src
+  #   - name: 
+  #     description: 
+  #     default: 
   tasks:
     - name: petclinic-maven
       taskRef:
         name: build-maven
       # params:
-      #   - name: pathToContext
-      #     value: "${params.pathToContext}"
+      #   - name: 
+      #     value: 
       resources:
         inputs:
           - name: workspace
@@ -143,30 +79,31 @@ spec:
         outputs:
           - name: workspace
             resource: source-repo
-    - name: petclinic-kaniko
+    - name: petclinic-buildah
       taskRef:
-        name: build-kaniko
-      # params:
-      #   - name: pathToContext
-      #     value: "${params.pathToContext}"
+        name: buildah
+        kind: ClusterTask
       resources:
         inputs:
-          - name: workspace
+          - name: source
             resource: source-repo
             from: 
               - petclinic-maven
         outputs:
-          - name: dockerImage
+          - name: image
             resource: docker-container
+      params:
+      - name: TLSVERIFY
+        value: "false"
     - name: petclinic-deploy
       taskRef:
-        name: deploy-kubectl
+        name: deploy-oc
       runAfter:
-        - petclinic-kaniko
+        - petclinic-buildah
       resources:
         inputs:
           - name: workspacedeploy
-            resource: deploy-repo
+            resource: source-repo
       params:
         - name: deployFile
-          value: test-deploy-secret.yaml
+          value: test-deploy.yaml
