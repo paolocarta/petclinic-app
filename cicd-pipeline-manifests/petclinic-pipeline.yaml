@@ -5,20 +5,21 @@ metadata:
 spec:
   inputs:
     resources:
-      - name: workspace
+      - name: source
         type: git
-    params:
-      - name: directory
-        description: Working directory parameter
-        default: /workspace/workspace
+    # params:
+    #   - name: directory
+    #     description: Working directory parameter
+    #     default: /workspace/workspace
   outputs:
     resources:
-      - name: workspace
+      - name: source
         type: git
   steps:
     - name: maven-build
       image: maven:3.6.3-jdk-8-slim
-      workingDir: ${inputs.params.directory}
+      workingDir: /workspace/source
+      # workingDir: ${inputs.params.directory}
       command: ["mvn"]
       args:
         - "clean"
@@ -59,7 +60,7 @@ spec:
   resources:
     - name: source-repo
       type: git
-    - name: docker-container
+    - name: container-image
       type: image
   # params:
   #   - name: 
@@ -74,15 +75,15 @@ spec:
       #     value: 
       resources:
         inputs:
-          - name: workspace
+          - name: source
             resource: source-repo
         outputs:
-          - name: workspace
+          - name: source
             resource: source-repo
     - name: petclinic-buildah
       taskRef:
-        name: buildah
-        kind: ClusterTask
+        name: buildah-test
+        # kind: ClusterTask
       resources:
         inputs:
           - name: source
@@ -91,7 +92,7 @@ spec:
               - petclinic-maven
         outputs:
           - name: image
-            resource: docker-container
+            resource: container-image
       params:
       - name: TLSVERIFY
         value: "false"

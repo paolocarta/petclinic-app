@@ -9,6 +9,6 @@ spec:
   - name: source-repo
     resourceRef:
       name: petclinic-git
-  - name: docker-container
+  - name: container-image
     resourceRef:
       name: petclinic-image
