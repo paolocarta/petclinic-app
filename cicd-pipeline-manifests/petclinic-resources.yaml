@@ -6,7 +6,7 @@ spec:
   type: git
   params:
     - name: url
-      value: https://github.com/paolocarta/petclinic-app.git
+      value: https://github.com/paolocarta/tekton-petclinic-app.git
     # - name: revision
     #   value: master
 ---
