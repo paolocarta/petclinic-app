@@ -28,21 +28,16 @@ spec:
     - name: image
       type: image
   steps:
-      # command:
-      #   - "ls"
-      # args:
-      #   - "-la"
-      #   - "/workspace/workspace/target"
-  - command:
-    - "sleep"
-    args:
-      - "600"
-    image: ubuntu
-    name: test
-    resources: {}
-    securityContext:
-      privileged: true
-    workingDir: /workspace/source
+  # - command:
+  #   - "sleep"
+  #   args:
+  #     - "600"
+  #   image: ubuntu
+  #   name: test
+  #   resources: {}
+  #   securityContext:
+  #     privileged: true
+  #   workingDir: /workspace/source
   - command:
     - buildah
     - bud

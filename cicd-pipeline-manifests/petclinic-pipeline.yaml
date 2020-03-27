@@ -32,19 +32,20 @@ metadata:
 spec:
   inputs:
     resources:
-      - name: workspacedeploy
+      - name: source
         type: git
     params:
       - name: directory
         description: Working directory parameter
-        default: /workspace/workspacedeploy/deploy-manifest
+        default: /workspace/source/deploy-manifest
       - name: deployFile
         description: Deployment file for app
         default: test-deploy.yaml
   steps:
     - name: oc-deploy
       image: quay.io/openshift/origin-cli:latest
-      workingDir: ${inputs.params.directory}
+      workingDir: /workspace/source/deploy-manifest
+      # workingDir: "${inputs.params.directory}"
       command: ["/bin/bash", "-c"]
       args:
         - |-
@@ -67,19 +68,19 @@ spec:
   #     description: 
   #     default: 
   tasks:
-    - name: petclinic-maven
-      taskRef:
-        name: build-maven
-      # params:
-      #   - name: 
-      #     value: 
-      resources:
-        inputs:
-          - name: source
-            resource: source-repo
-        outputs:
-          - name: source
-            resource: source-repo
+    # - name: petclinic-maven
+    #   taskRef:
+    #     name: build-maven
+    #   # params:
+    #   #   - name: 
+    #   #     value: 
+    #   resources:
+    #     inputs:
+    #       - name: source
+    #         resource: source-repo
+    #     outputs:
+    #       - name: source
+    #         resource: source-repo
     - name: petclinic-buildah
       taskRef:
         name: buildah-test
@@ -88,14 +89,18 @@ spec:
         inputs:
           - name: source
             resource: source-repo
-            from: 
-              - petclinic-maven
+            # from: 
+            #   - petclinic-maven
         outputs:
           - name: image
             resource: container-image
       params:
       - name: TLSVERIFY
         value: "false"
+      - name: DOCKERFILE
+        value: "multistage.Dockerfile"
+      - name: BUILDER_IMAGE
+        value: quay.io/buildah/stable:v1.14.0
     - name: petclinic-deploy
       taskRef:
         name: deploy-oc
@@ -103,7 +108,7 @@ spec:
         - petclinic-buildah
       resources:
         inputs:
-          - name: workspacedeploy
+          - name: source
             resource: source-repo
       params:
         - name: deployFile
